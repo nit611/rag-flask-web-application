@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <div class="left-column">
+        <h2>Upload Document</h2>
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="application/pdf" required>
+            <button type="submit">Upload</button>
+        </form>
+        <h2>Documents</h2>
+        <ul>
+            {% for file in files %}
+            <li><a href="{{ url_for('view_document', filename=file) }}">{{ file }}</a></li>
+            {% endfor %}
+        </ul>
+        {% if document_url %}
+        <iframe src="{{ document_url }}" width="100%" height="600px"></iframe>
+        {% endif %}
+    </div>
+    <div class="right-column">
+        <h2>Chatbot</h2>
+        <div id="chat-window">
+            <!-- Chat messages will be appended here -->
+        </div>
+        <form id="chat-form">
+            <input type="text" name="user_input" id="user_input" placeholder="Type your message..." autocomplete="off" required>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+</div>
+<script>
+    const chatForm = document.getElementById('chat-form');
+    const chatWindow = document.getElementById('chat-window');
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const userInput = document.getElementById('user_input').value;
+
+        // Display user message
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.className = 'chat-message user-message';
+        userMessageDiv.innerHTML = '<div class="avatar">[User]</div><div class="message">' + userInput + '</div>';
+        chatWindow.appendChild(userMessageDiv);
+
+        // Scroll to the bottom
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        // Send the message to the server
+        fetch('{{ url_for("chat") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                'user_input': userInput
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Display assistant message
+            const assistantMessageDiv = document.createElement('div');
+            assistantMessageDiv.className = 'chat-message assistant-message';
+            assistantMessageDiv.innerHTML = '<div class="avatar">[Assistant]</div><div class="message">' + data.reply + '</div>';
+            chatWindow.appendChild(assistantMessageDiv);
+
+            // Scroll to the bottom
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+
+        // Clear the input field
+        document.getElementById('user_input').value = '';
+    });
+</script>
+{% endblock %}
